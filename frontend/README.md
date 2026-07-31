@@ -1,16 +1,29 @@
-# React + Vite
+# CampusConnect 🎓
+**Team Intellectuals | Track 1**
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📖 Project Overview
+CampusConnect is a role-based, AI-driven social platform designed to solve campus fragmentation. It connects students, alumni, and club presidents through a personalized community feed and an intelligent career advice chatbot. 
 
-Currently, two official plugins are available:
+## 🗺️ System Workflow
+*(Note: Replace this text with a link/image of your flowchart before final submission!)*
+![System Flowchart](./flowchart.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🗄️ Deployed Databases & Architecture
+Our prototype utilizes **Google Firebase Firestore** as a deployed NoSQL database for real-time synchronization. 
+* **`users` collection:** Stores profile data, academic goals, and Role-Based Access Control (RBAC) permissions (e.g., student vs. admin).
+* **`communityPosts` collection:** Stores feed interactions, AI-calculated matching scores, and nested comments.
 
-## React Compiler
+## 🔑 API Keys & Functions
+To comply with submission guidelines, our API keys remain in the codebase. Here is how they function within our app:
+* **Firebase SDK Keys:** These securely connect our React frontend directly to our deployed Firestore database and manage user authentication sessions.
+* **Google Gemini API Key:** This powers our "Campus AI" chatbot. The system secretly injects the user's Firestore profile data (major, skills, goals) into a hidden context prompt before sending it to the Gemini endpoint. This allows the model to return highly personalized, markdown-formatted academic advice.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ⚙️ Tech Stack
+* **Frontend:** React.js, Vite, Tailwind CSS
+* **Backend/Database:** Firebase (Auth & Firestore)
+* **AI Integration:** Google Gemini API
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 How to Run Locally
+1. Clone this repository.
+2. Run `npm install` to download dependencies.
+3. Run `npm run dev` to launch the local development server.
