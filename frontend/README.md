@@ -5,7 +5,6 @@
 CampusConnect is a role-based, AI-driven social platform designed to solve campus fragmentation. It connects students, alumni, and club presidents through a personalized community feed and an intelligent career advice chatbot. 
 
 ## 🗺️ System Workflow
-*(Note: Replace this text with a link/image of your flowchart before final submission!)*
 ![System Flowchart](./flowchart.png)
 
 ## 🗄️ Deployed Databases & Architecture
@@ -25,5 +24,5 @@ To comply with submission guidelines, our API keys remain in the codebase. Here 
 
 ## 🚀 How to Run Locally
 1. Clone this repository.
-2. Run `npm install` to download dependencies.
+2. Run `npm install` to download dependencies..
 3. Run `npm run dev` to launch the local development server.
