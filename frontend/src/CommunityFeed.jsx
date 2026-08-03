@@ -184,9 +184,11 @@ export default function CommunityFeed({ userData }) {
   };
 
   const blockUser = async (userEmail) => {
-    if (!window.confirm(`🚨 BLOCK ${userEmail} from posting/commenting?`)) return;
+    // Updated prompt to warn admin about data deletion
+    if (!window.confirm(`🚨 BLOCK ${userEmail} and permanently delete all of their posts?`)) return;
 
     try {
+      // 1. Block the user profile
       const q = query(collection(db, "users"), where("email", "==", userEmail));
       const querySnapshot = await getDocs(q);
 
@@ -195,12 +197,45 @@ export default function CommunityFeed({ userData }) {
         await updateDoc(userDocRef, {
           isBlockedFromFeed: true
         });
-        alert(`🚫 Successfully blocked ${userEmail} from the Community Feed.`);
+
+        // 2. Find and delete all posts by this user
+        const postsQuery = query(collection(db, "communityPosts"), where("authorEmail", "==", userEmail));
+        const postsSnapshot = await getDocs(postsQuery);
+        
+        // Use Promise.all to delete multiple posts efficiently
+        const deletePromises = postsSnapshot.docs.map(postDoc => 
+          deleteDoc(doc(db, "communityPosts", postDoc.id))
+        );
+        await Promise.all(deletePromises);
+
+        alert(`🚫 Successfully blocked ${userEmail} and wiped their posts from the feed.`);
+        fetchPosts(); // Refresh the feed immediately to show changes
       } else {
         alert("❌ Error: User not found in database.");
       }
     } catch (error) {
-      console.error("Error blocking user:", error);
+      console.error("Error blocking user and deleting posts:", error);
+    }
+  };
+
+  const unblockUser = async (userEmail) => {
+    if (!window.confirm(`🔓 UNBLOCK ${userEmail} to restore their posting privileges?`)) return;
+
+    try {
+      const q = query(collection(db, "users"), where("email", "==", userEmail));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDocRef = doc(db, "users", querySnapshot.docs[0].id);
+        await updateDoc(userDocRef, {
+          isBlockedFromFeed: false
+        });
+        alert(`✅ Successfully unblocked ${userEmail}.`);
+      } else {
+        alert("❌ Error: User not found in database.");
+      }
+    } catch (error) {
+      console.error("Error unblocking user:", error);
     }
   };
 
@@ -254,14 +289,13 @@ export default function CommunityFeed({ userData }) {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <span className="text-xs font-bold tracking-wider text-blue-400 uppercase bg-blue-900/30 px-2 py-1 rounded">{post.domain}</span>
-                    {/* Increased threshold so it requires a real exact word or domain match */}
                     {post.matchScore >= 15 && <span className="ml-2 text-xs text-emerald-400 font-medium">✨ Top Match</span>}
                     {post.isEdited && <span className="ml-2 text-xs text-slate-500 italic">(Edited)</span>}
                     <h3 className="font-bold text-slate-200 mt-3">{post.authorName}</h3>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap justify-end">
                     {isAuthor && (
                       <>
                         <button onClick={() => startEditing(post)} className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded border border-slate-700 transition">Edit</button>
@@ -272,6 +306,7 @@ export default function CommunityFeed({ userData }) {
                       <>
                         <button onClick={() => issueWarning(post.authorEmail)} className="text-xs bg-amber-900/40 hover:bg-amber-600 text-amber-400 hover:text-white px-2 py-1 rounded border border-amber-800 transition">⚠️ Warn</button>
                         <button onClick={() => blockUser(post.authorEmail)} className="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white px-2 py-1 rounded border border-red-800 transition">🚫 Block</button>
+                        <button onClick={() => unblockUser(post.authorEmail)} className="text-xs bg-emerald-900/40 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2 py-1 rounded border border-emerald-800 transition">🔓 Unblock</button>
                       </>
                     )}
                   </div>
