@@ -5,11 +5,11 @@ import { collection, addDoc, getDocs, updateDoc, doc, serverTimestamp, arrayUnio
 export default function CommunityFeed({ userData }) {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Post Form State
   const [newPostDomain, setNewPostDomain] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
-  
+
   // Comment Form State 
   const [commentInputs, setCommentInputs] = useState({});
 
@@ -35,25 +35,34 @@ export default function CommunityFeed({ userData }) {
         ...doc.data()
       }));
 
-      // --- UPGRADED AI MATCHING ALGORITHM ---
-      // 1. Combine major, skills, and goals into one giant lowercase string
+      // --- STRICTER AI MATCHING ALGORITHM ---
       const userInterests = `${userData?.major || ''} ${userData?.skills || ''} ${userData?.wantToLearn || ''}`.toLowerCase();
-      
-      // 2. Split by spaces, commas, or punctuation to get individual keywords
-      // Filter out tiny words (like "and", "or", "in") by checking length > 3
-      const interestKeywords = userInterests.split(/[\s,.-]+/).filter(k => k.length > 3);
+
+      // 1. Filter out broad academic terms that cause false positive matches
+      const stopWords = ['learning', 'tech', 'science', 'computer', 'engineering', 'and', 'for', 'the'];
+
+      const interestKeywords = userInterests
+        .split(/[\s,.-]+/)
+        .filter(k => k.length >= 3 && !stopWords.includes(k));
 
       fetchedPosts = fetchedPosts.map(post => {
         let score = 0;
-        const postText = `${post.domain} ${post.content}`.toLowerCase();
         
-        // 3. Add points for every keyword match
+        // 2. Split post content into exact words to prevent partial substring matching
+        const postContentWords = (post.content || '').toLowerCase().split(/[\s,.-]+/);
+        const postDomainText = (post.domain || '').toLowerCase();
+
         interestKeywords.forEach(keyword => {
-          if (postText.includes(keyword)) score += 15; // Increased weight for matches!
+          // Domain Match: Huge indicator of relevance (+30 points)
+          if (postDomainText.includes(keyword)) score += 30;
+          
+          // Content Match: Must be the exact whole word (+15 points)
+          if (postContentWords.includes(keyword)) score += 15;
         });
 
-        // 4. Slight deduction for older posts
-        const daysOld = (new Date() - (post.createdAt?.toDate() || new Date())) / (1000 * 60 * 60 * 24);
+        // 3. Time decay to slowly lower the score of old posts
+        const timeDiff = new Date() - (post.createdAt?.toDate() || new Date());
+        const daysOld = Math.max(0, timeDiff / (1000 * 60 * 60 * 24));
         score -= daysOld * 0.5;
 
         return { ...post, matchScore: score };
@@ -155,11 +164,11 @@ export default function CommunityFeed({ userData }) {
   // --- ADMIN MODERATION CONTROLS ---
   const issueWarning = async (userEmail) => {
     if (!window.confirm(`Issue an official warning to ${userEmail}?`)) return;
-    
+
     try {
       const q = query(collection(db, "users"), where("email", "==", userEmail));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         const userDocRef = doc(db, "users", querySnapshot.docs[0].id);
         await updateDoc(userDocRef, {
@@ -176,11 +185,11 @@ export default function CommunityFeed({ userData }) {
 
   const blockUser = async (userEmail) => {
     if (!window.confirm(`🚨 BLOCK ${userEmail} from posting/commenting?`)) return;
-    
+
     try {
       const q = query(collection(db, "users"), where("email", "==", userEmail));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         const userDocRef = doc(db, "users", querySnapshot.docs[0].id);
         await updateDoc(userDocRef, {
@@ -240,16 +249,17 @@ export default function CommunityFeed({ userData }) {
 
             return (
               <div key={post.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-                
+
                 {/* Post Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <span className="text-xs font-bold tracking-wider text-blue-400 uppercase bg-blue-900/30 px-2 py-1 rounded">{post.domain}</span>
-                    {post.matchScore > 0 && <span className="ml-2 text-xs text-emerald-400 font-medium">✨ Top Match</span>}
+                    {/* Increased threshold so it requires a real exact word or domain match */}
+                    {post.matchScore >= 15 && <span className="ml-2 text-xs text-emerald-400 font-medium">✨ Top Match</span>}
                     {post.isEdited && <span className="ml-2 text-xs text-slate-500 italic">(Edited)</span>}
                     <h3 className="font-bold text-slate-200 mt-3">{post.authorName}</h3>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     {isAuthor && (
@@ -290,7 +300,7 @@ export default function CommunityFeed({ userData }) {
                 {/* Comments Section */}
                 <div className="border-t border-slate-800 pt-4">
                   <h4 className="text-sm font-bold text-slate-400 mb-4">Discussion ({post.comments?.length || 0})</h4>
-                  
+
                   <div className="space-y-4 mb-4">
                     {post.comments?.map((comment, idx) => (
                       <div key={idx} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">

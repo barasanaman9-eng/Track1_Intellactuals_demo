@@ -12,26 +12,45 @@ import { doc, getDoc } from 'firebase/firestore';
 
 export default function App() {
   const [userData, setUserData] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // 1. Added loading state
   const [activeView, setActiveView] = useState('dashboard'); // 'dashboard', 'chat', 'profile', 'clubs', 'feed', 'admin'
 
   useEffect(() => {
     // This listener watches for login/logout and survives page refreshes
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // User is logged in! Fetch their data from Firestore
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          setUserData({ ...userDoc.data(), email: currentUser.email });
+        try {
+          // User is logged in! Fetch their data from Firestore
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            setUserData({ ...userDoc.data(), email: currentUser.email });
+          }
+        } catch (error) {
+          console.error("Error fetching user document:", error);
         }
       } else {
         // User is logged out
         setUserData(null);
       }
+      // 2. Crucial Step: Stop loading ONLY AFTER Firestore finishes fetching
+      setIsAuthLoading(false); 
     });
 
     // Cleanup the listener when the app closes
     return () => unsubscribe();
   }, []);
+
+  // 3. The Anti-Flicker Loading Screen
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-blue-500 font-bold text-xl animate-pulse">
+          Loading CampusConnect...
+        </p>
+      </div>
+    );
+  }
 
   // If no user is logged in, show the Landing Page
   if (!userData) {
