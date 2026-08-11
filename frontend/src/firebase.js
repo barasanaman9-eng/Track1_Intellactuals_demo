@@ -1,19 +1,19 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'; 
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-const firebaseConfig = { 
-  apiKey: "AIzaSyDKwmWYx-DxYjXaa-iPl4MsGnFU9qWEtOs", 
-  authDomain: "campusconnect-c3478.firebaseapp.com", 
-  projectId: "campusconnect-c3478", 
-  storageBucket: "campusconnect-c3478.firebasestorage.app", 
-  messagingSenderId: "577178601861", 
-  appId: "1:577178601861:web:e9e73904b98fac6fd59cec" 
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-// Export Authentication, Database, and the Google Provider
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
+export { app, auth, db, googleProvider };
