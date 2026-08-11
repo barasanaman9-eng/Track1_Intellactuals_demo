@@ -36,17 +36,22 @@ export default function Chatbot({ userData }) {
       Tailor all advice specifically to this profile.]\n\n
     ` : '';
 
-    // 2. Prepend it to the user's message before sending it to the backend
     const messageToSend = profileContext + userMessage;
 
     try {
-      // ⚠️ UPDATE THIS URL IF YOUR BACKEND RUNS ON A DIFFERENT PORT ⚠️
-      const response = await fetch('http://localhost:5000/api/chat', {
+      // 2. Fetch directly from Gemini API for the live demo
+      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: messageToSend })
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: messageToSend }]
+          }]
+        })
       });
 
       if (!response.ok) {
@@ -55,17 +60,19 @@ export default function Chatbot({ userData }) {
 
       const data = await response.json();
       
-      // Update state with the AI's reply
+      // 3. Extract Gemini's text response
+      const aiReply = data.candidates[0].content.parts[0].text;
+      
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: data.reply || data.response || "I processed your request, but the response format was unexpected." 
+        content: aiReply 
       }]);
       
     } catch (error) {
       console.error("Chat error:", error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I am having trouble connecting to the campus servers right now. Please try again later.' 
+        content: 'Sorry, I am having trouble connecting to the AI servers right now. Please try again later.' 
       }]);
     } finally {
       setIsLoading(false);
@@ -95,7 +102,6 @@ export default function Chatbot({ userData }) {
                 ? 'bg-blue-600 text-white rounded-tr-sm shadow-md' 
                 : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-sm shadow-md overflow-x-auto'
             }`}>
-              {/* Render Markdown for Assistant, regular text for User */}
               {msg.role === 'user' ? (
                 <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">{msg.content}</p>
               ) : (
