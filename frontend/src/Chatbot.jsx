@@ -27,7 +27,7 @@ export default function Chatbot({ userData }) {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    // 1. Build a hidden context string based on their profile
+    // Build a hidden context string based on their profile
     const profileContext = userData ? `
       [SYSTEM CONTEXT: The user you are talking to is named ${userData.name || 'a student'}. 
       They are a ${userData.year || 'student'} studying ${userData.major || 'their major'}. 
@@ -39,10 +39,11 @@ export default function Chatbot({ userData }) {
     const messageToSend = profileContext + userMessage;
 
     try {
-      // 2. Fetch directly from Gemini API for the live demo
-      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
+      // 1. Grab the key and aggressively strip any accidental spaces
+      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY.trim(); 
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      // 2. The exact URL formatting required by Google
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,6 +103,7 @@ export default function Chatbot({ userData }) {
                 ? 'bg-blue-600 text-white rounded-tr-sm shadow-md' 
                 : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-sm shadow-md overflow-x-auto'
             }`}>
+              {/* Render Markdown for Assistant, regular text for User */}
               {msg.role === 'user' ? (
                 <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">{msg.content}</p>
               ) : (
